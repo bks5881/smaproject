@@ -74,8 +74,8 @@ def step2():
     user_item_matrix,unique_users,unique_items = step1()
 
     # Test the functions with sample data
-    user_id = int(np.where(unique_users=="IMd3NQbclta91pFKk3AJZg")[0][0])
-    item_id = int(np.where(unique_items=="SZU9c8V2GuREDN5KgyHFJw")[0][0])
+    user_id = int(np.where(unique_users=="Uk3X2AypU8AqvcYEVf7s6Q")[0][0])
+    item_id = int(np.where(unique_items=="eL4lyE7LNoXEMvpcJ8WNVw")[0][0])
     predicted_rating = predict_rating(user_id, item_id, user_item_matrix)
     print(f"Predicted rating of user {user_id} for item {item_id}: {predicted_rating}")
 step2()
