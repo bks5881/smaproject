@@ -1,9 +1,9 @@
 import pandas as pd
 import json
 import numpy as np
-user_recommendations = pd.read_csv("item_similarities.csv", index_col=0)
-user_id = "-3AooxIkg38UyUdlz5oXdw"
-
+user_recommendations = pd.read_csv("sk_learn_collaborative.csv", index_col=0)
+#user_id = "-3AooxIkg38UyUdlz5oXdw"
+user_id = "-H-fZonTLitwHFY_PLAIjA"
 min_rating = 1  # Minimum rating in your dataset
 max_rating = 5  # Maximum rating in your dataset
 user_recommendations = (user_recommendations - 0) / (1 - 0) * (max_rating - min_rating) + min_rating
