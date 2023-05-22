@@ -20,14 +20,17 @@ def build_graph():
         count = 0
 
         for line in f:
+            if count<3423:
+                count+=1
+                continue
             with driver.session() as session:
                 data = json.loads(line)
                 print(data)
                 helper(session, data, create_person_query)
                 helper(session, data, create_business_query)
                 helper(session, data, create_edge_query)
-                count+=1
-            if count >1000:
+            count+=1
+            if count >4000:
                 break
             print("blah")
 

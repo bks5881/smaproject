@@ -14,38 +14,33 @@ RETURN n, r, m
 """
 
 
-def adamic_adar_score(adj_matrix):
-    # Calculate the degree of each node
+def adamic_adar_score_bipartite(adj_matrix, left_nodes, right_nodes):
+    # Calculate the inverse log degree for each node in the left partition
     degree = np.sum(adj_matrix, axis=1)
+    #inv_log_degree = np.where(degree > 0.0, 1 / np.log(degree), 0)
+    inv_log_degree = np.zeros(len(left_nodes))
+    for i, node in enumerate(left_nodes):
+        degree = np.sum(adj_matrix[i])
+        inv_log_degree[i] = 1 / np.log(degree) if degree > 0 else 0
 
-    # Calculate the inverse of the logarithm of the degree for each node
-    inv_log_degree = 1 / np.log(degree)
-    inv_log_degree[np.isinf(inv_log_degree)] = 0
-
-    # Calculate the Adamic-Adar score for each pair of nodes
-    aa_score = np.zeros((len(degree), len(degree)))
-    for i in range(len(degree)):
-        for j in range(i + 1, len(degree)):
-            common_neighbors = np.nonzero(adj_matrix[i] * adj_matrix[j])[0]
+    # Calculate the Adamic-Adar score for all pairs of nodes
+    aa_score = np.zeros((len(left_nodes), len(right_nodes)))
+    for i in range(len(left_nodes)):
+        for j in range(len(right_nodes)):
+            common_neighbors = np.nonzero(left_nodes[i] * right_nodes[j])[0]
             aa_score[i][j] = np.sum(inv_log_degree[common_neighbors])
-
-    # Set the score of each node to 0
-    np.fill_diagonal(aa_score, 0)
-
-    # Mirror the upper triangular matrix to the lower triangular matrix
-    aa_score = aa_score + aa_score.T
 
     return aa_score
 
 
-def adamic_adar_link_prediction(adj_matrix, num_top_predictions):
+def adamic_adar_link_prediction(adj_matrix, nodes, restaurants,num_top_predictions):
     # Calculate the Adamic-Adar score for all pairs of nodes
-    np.fill_diagonal(adj_matrix, 1)
-    aa_score = adamic_adar_score(adj_matrix)
+    #np.fill_diagonal(adj_matrix, 1)
+    aa_score = adamic_adar_score_bipartite(adj_matrix, nodes, restaurants)
 
     predicted_edges = []
     for i in range(adj_matrix.shape[0]):
-        for j in range(i+1, adj_matrix.shape[0]):
+        for j in range(i+1, adj_matrix.shape[1]):
             if adj_matrix[i][j] == 0:
                 score = aa_score[i][j]
                 predicted_edges.append(((i, j), score))
@@ -59,7 +54,7 @@ def adamic_adar_link_prediction(adj_matrix, num_top_predictions):
 results = graph.run(query)
 nodes = set()
 edges = []
-
+restuarants = set()
 count = 0
 for record in results:
     node = record['n']
@@ -68,9 +63,10 @@ for record in results:
     edge = record['r']
     if edge is not None:
         edges.append((node, edge, record['m']))
-        edges.append((record['m'], edge,node))
+        #edges.append((record['m'], edge,node))
         nodes.add(node)
-        nodes.add(record['m'])
+        restuarants.add(record['m'])
+        #nodes.add(record['m'])
         count +=1
         if len(nodes)>=100:
             break
@@ -78,14 +74,17 @@ for record in results:
 
 # Create a dictionary mapping node IDs to indices in the adjacency matrix
 node_index = {node.identity: i for i, node in enumerate(nodes)}
+restuarants_index = {node.identity: i for i, node in enumerate(restuarants)}
 lookup_settings = {node.identity: node for node in nodes}
+for j, restuarant in enumerate(restuarants):
+    lookup_settings[restuarant.identity] = j
 # Create an empty adjacency matrix
-adj_matrix = np.zeros((len(nodes), len(nodes)))
+adj_matrix = np.zeros((len(nodes), len(restuarants)))
 
 # Populate the adjacency matrix with edge weights
 for edge in edges:
     source = node_index[edge[0].identity]
-    target = node_index.get(edge[2].identity)
+    target = restuarants_index.get(edge[2].identity)
     '''
     if target is None:
         target = len(nodes)
@@ -97,7 +96,7 @@ for edge in edges:
     adj_matrix[source][target] = weight
 print(len(adj_matrix))
 print(len(adj_matrix[0]))
-edges = adamic_adar_link_prediction(adj_matrix,3)
+edges = adamic_adar_link_prediction(adj_matrix,list(node_index.keys()), list(restuarants_index.keys()),3)
 print(edges)
 
 def adamic_adar_link_prediction2(adj_matrix, num_top_predictions):
@@ -123,7 +122,7 @@ def adamic_adar_link_prediction2(adj_matrix, num_top_predictions):
 
     # Return the top predicted edges and their scores
     return results[:num_top_predictions]
-edges = adamic_adar_link_prediction2(adj_matrix,3)
+#edges = adamic_adar_link_prediction2(adj_matrix,3)
 for edge in edges:
     print("" + str(lookup_settings[edge[0][0]]) +"--> " + str(lookup_settings[edge[0][1]]))
 print(edges)
