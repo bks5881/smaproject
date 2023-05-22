@@ -1,0 +1,16 @@
+### Query to combine all nodes where business ids are the same
+MATCH (n)
+WHERE n.business_id IS NOT NULL
+WITH n.business_id AS business_id, collect(n) AS nodes
+WHERE size(nodes) > 1
+WITH business_id, head(nodes) AS first_node, tail(nodes) AS other_nodes
+UNWIND other_nodes AS node_to_merge
+MERGE (merged_node:Business {business_id: business_id})
+  ON CREATE SET merged_node += first_node
+  ON MATCH SET merged_node += node_to_merge
+WITH first_node, merged_node
+MATCH (related_node)
+WHERE (related_node)-[]-(first_node)
+MERGE (related_node)-[r:CONNECTED_TO]-(merged_node)
+DELETE r
+DETACH DELETE first_node
